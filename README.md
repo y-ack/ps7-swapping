@@ -1,2 +1,2 @@
-# ps7-swapping
-oh no oh no not again (powershell 7 config with two modes)
+# powershell 7 and constantly swapping
+i am using powershell wrong again :)
