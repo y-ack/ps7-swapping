@@ -1,2 +1,2 @@
-# powershell 7 and constantly swapping
+# 7 powershells and constantly swapping
 i am using powershell wrong again :)
