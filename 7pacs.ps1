@@ -1,4 +1,4 @@
-# version 0.0.1205
+# version 0.0.1206
 [ConsoleColor]$prompt_pathcolor = [ConsoleColor]::Green
 
 [ConsoleColor]$eprompt_idcolor = [ConsoleColor]::Gray
@@ -39,6 +39,19 @@ function editprompt() {
 function linestart($line, $cursor) {
 	[int]$pos = $line.lastindexof("`n", [Math]::Max(0,$cursor))
 	return $pos -ne -1 ? $pos + 1 : 0
+}
+function lastline($text, $cursor) {
+	$linestart = linestart $text ($cursor-1)
+	$lastlinestart = linestart $text ($linestart-2)
+	return $text.Substring($lastlinestart, [Math]::Max(0,$linestart-1)-$lastlinestart)
+}
+function lastindent($text, $cursor) {
+	$lastline = lastline $text $cursor
+	if ($lastline -match "^(\s+)") {
+		return $Matches[1]
+	} else {
+		return ""
+	}
 }
 function unset-key([string[]]$Chord) {
 	Remove-PSReadLineKeyHandler -Chord $Chord
@@ -82,6 +95,19 @@ $EditReadLineOptions = @{
 function set-editreadline() {
 	Set-PSReadLineOption @EditReadLineOptions
 	define-key  "Enter"  AddLine
+	Remove-PSReadlineKeyHandler "Enter"
+	Set-PSReadLineKeyHandler -Key "Enter" -BriefDescription "NewLine" -LongDescription "add line after with automatic indentation" -ScriptBlock {
+		[Microsoft.PowerShell.PSConsoleReadLine]::AddLine()
+		$line = $null
+		$cursor = $null
+		[Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line,
+        [ref]$cursor)
+		[Microsoft.PowerShell.PSConsoleReadLine]::Insert((lastindent $line $cursor))
+		if ((lastline $line $cursor) -match "{\s*$") {
+			[Microsoft.PowerShell.PSConsoleReadLine]::Insert("  ")
+		}
+			
+	}
 	define-key  "Ctrl+Enter"  AcceptLine
 	define-key  "Alt+w" Copy
 	Set-PSReadLineKeyHandler -Chord "Ctrl+w" -ScriptBlock { 
@@ -155,7 +181,7 @@ function set-editreadline() {
 	        [Microsoft.PowerShell.PSConsoleReadLine]::Insert("  ")
 	} else {
 		#use menuComplete?
-		[Microsoft.PowerShell.PSConsoleReadLine]::TabCompleteNext()
+		[Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
 	}
 	}
 	Remove-PSReadlineKeyHandler "shift+tab"
@@ -169,7 +195,7 @@ function set-editreadline() {
 	        [Microsoft.PowerShell.PSConsoleReadLine]::BackwardDeleteChar()
 		[Microsoft.PowerShell.PSConsoleReadLine]::BackwardDeleteChar()
 	} else {
-		[Microsoft.PowerShell.PSConsoleReadLine]::TabCompleteNext()
+		[Microsoft.PowerShell.PSConsoleReadLine]::MenuComplete()
 	}
 	}
 }
